@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 __author__ = 'James Currier'
-__version__ = '3.0'
+__version__ = '3.1'
 
 
 
@@ -12,10 +12,11 @@ from random import choice, random
 from math import factorial
 from os import chdir, listdir, mkdir, path, rename
 join = path.join
+basename = path.basename
 from statistics import mean, median, stdev
 import warnings
 import pickle
-from time import clock
+from time import process_time
 
 
 
@@ -33,9 +34,9 @@ SPEED = max(int(MIN_PLANT_SIZE**0.5 // 2), 1)  # Speed to analysis
 
 
 def check_speed():
-    t = clock()
+    t = process_time()
     count = 0
-    while clock() < t + 0.5:
+    while process_time() < t + 0.5:
         factorial(100)
         count += 1
 
@@ -318,7 +319,7 @@ def multiple(folder_name: str,
     pics = [j for j in ls if path.isfile(j)]
     le = len(pics)
 
-    # Analyse each of the pictures
+    # Analyze each of the pictures
     for i in pics:
 
         # Make the field
@@ -330,13 +331,13 @@ def multiple(folder_name: str,
         
         ruler.output_distances(
             join(folder_name,
-                 'Analysis/Data/{}_Distances.csv'.format(i.split('.')[0])
+                 'Analysis/Data/{}_Distances.csv'.format(basename(i).split('.')[0])
                  )                 
             )
         
         ruler.output_row_info(
             join(folder_name,
-                 'Analysis/Data/{}_Rows.csv'.format(i.split('.')[0])
+                 'Analysis/Data/{}_Rows.csv'.format(basename(i).split('.')[0])
                  )
             )
 
@@ -346,10 +347,8 @@ def multiple(folder_name: str,
             output_options[k]
             img = field.make_visual(ruler, output_options[k])
             img.save(
-                join(folder_name, 'Analysis/Images/{}_Visual_{}.png'
-                .format(i.split('.')[0], k + 1)
-                     )
-                )
+                join(folder_name,
+                     'Analysis/Images/{}_Visual_{}.png'.format(basename(i).split('.')[0], k + 1)))
 
         # Increment the progress meter
         co += 1
