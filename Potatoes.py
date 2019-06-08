@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 __author__ = 'James Currier'
-__version__ = '4.1'
+__version__ = '4.2'
 
 
 
@@ -31,8 +31,7 @@ SPEED = max(int(MIN_PLANT_SIZE ** 0.5 // 2), 1)  # Speed to analyze
 
 
 """Return relative path to src"""
-rel_path = lambda src : join(abspath(dirname(argv[0])), src)
-
+rel_path = lambda src : join(dirname(argv[0]), src)
 
 
 
@@ -66,7 +65,8 @@ def find_local_mins(lis: list, tolerance: float = 0.1) -> list:
 
     lis: list(number)
         list of numbers to find local minimums of
-    TODO put tolerance
+    tolerance: number
+        minimum percent of green that constitutes a row
     """
     temp = []
     mins = []
@@ -118,7 +118,7 @@ def interactive():
     """Interactive use of the plant finder"""
 
     while True:        
-        fn = rel_path(input('Enter Photo Name or Folder Name: \n'))
+        fn = rel_path(abspath(input('Enter Photo Name or Folder Name: \n')))
         print()
 
         if exists(fn):
@@ -441,7 +441,7 @@ class Picture:
             RuntimeWarning)
 
 
-    def binarized(self, pic_array: numpy.ndarray, modelLocation="GreenNN.bin") -> numpy.ndarray:
+    def binarized(self, pic_array: numpy.ndarray, modelLocation="NN.bin") -> numpy.ndarray:
         """Returns an array of the same size as pic_array, which corresponds
          to whether the pixels in the original array are green.
          
@@ -450,15 +450,15 @@ class Picture:
         """
 
         try:
-            model = pickle.load(open('GreenNN.bin', 'rb'))
+            model = pickle.load(open(modelLocation, 'rb'))
         
         except FileNotFoundError:
-            print("Can't locate the GreenNN.bin file")
+            print("Can't locate {}".format(modelLocation))
             print("Defaulting to Naive Model")
             model = NaiveModel()
         
         except AttributeError:
-            print("Can't load GreenNN.bin file")
+            print("Can't load {}".format(modelLocation))
             print("Defaulting to Naive Model")
             model = NaiveModel()
 
@@ -1911,7 +1911,11 @@ class Ruler:
         output_file: str
             The name of the file to write distances to
         """
-        
+        if not exists(rel_path("data")):
+            mkdir(rel_path("data"))
+
+        output_file = rel_path(join("data",output_file))
+
         # Open the given file for writing
         with open(output_file, 'w+', newline = '') as csvfile:
             out = csv.writer(csvfile)
@@ -1942,6 +1946,9 @@ class Ruler:
         output_file: str
             The name of the file to write distances to
         """
+        output_file = rel_path(join("data", output_file))
+
+        # Open the given file for writing
         with open(output_file, 'w+', newline = '') as csvfile:
             out = csv.writer(csvfile)
 
