@@ -1,7 +1,6 @@
 #!/usr/bin/python3
 __author__ = 'James Currier'
-__version__ = '3.1'
-
+__version__ = '4.1'
 
 
 
@@ -10,14 +9,13 @@ import numpy
 import csv
 from random import choice, random
 from math import factorial
-from os import chdir, listdir, mkdir, path, rename
-join = path.join
-basename = path.basename
+from os import listdir, mkdir, rename
+from os.path import join, basename, dirname, abspath, exists, isfile
+from sys import argv
 from statistics import mean, median, stdev
 import warnings
 import pickle
 from time import process_time
-
 
 
 
@@ -26,9 +24,14 @@ from time import process_time
 MIN_PLANT_SIZE = 50  # Min number of pixels in a plant
 TIGHTNESS = 3  # How tight to trim the rows
 SPLITTING_SENSITIVITY = 5/6  # Sensitivity for splitting touching plants
-SPEED = max(int(MIN_PLANT_SIZE**0.5 // 2), 1)  # Speed to analysis
+SPEED = max(int(MIN_PLANT_SIZE ** 0.5 // 2), 1)  # Speed to analyze
 
 ###############################################################################
+
+
+
+"""Return relative path to src"""
+rel_path = lambda src : join(abspath(dirname(argv[0])), src)
 
 
 
@@ -57,15 +60,14 @@ def distance_between(pt1: tuple, pt2: tuple) -> float:
 
 
 
-
 def find_local_mins(lis: list, tolerance: float = 0.1) -> list:
     """Finds the local minimums of the list lis
     Returns the indexes of these minimums
 
     lis: list(number)
         list of numbers to find local minimums of
+    TODO put tolerance
     """
-    
     temp = []
     mins = []
 
@@ -95,9 +97,7 @@ def find_local_mins(lis: list, tolerance: float = 0.1) -> list:
 
         curr += 1
 
-    
     return mins
-
 
 
 
@@ -114,44 +114,41 @@ def within(point: tuple, box: tuple) -> bool:
 
 
 
-
 def interactive():
     """Interactive use of the plant finder"""
 
-    fn = input('Enter Photo Name or Folder Name: \n')
-    print()
-
-    while not path.exists(fn):
-        print('{} is not a valid path \n'.format(fn))
-        fn = input('Enter Photo Name or Folder Name: \n')
+    while True:        
+        fn = rel_path(input('Enter Photo Name or Folder Name: \n'))
         print()
 
+        if exists(fn):
+            break
+
+        print('{} is not a valid path \n'.format(fn))
 
     # Start Single Mode
-    if path.isfile(fn):
+    if isfile(fn):
         main(fn, MIN_PLANT_SIZE)
-
 
     # Start Multiple mode
     else:
-        num = input('Enter number of output images: \n')
-        print()
-        while not num.isdigit():
+        while True:
+            num = input("Enter number of output images: \n")
+            print()
+
+            if num.isdigit():
+                break
+
             print('{} is not a valid number\n'.format(num))
-            num = input('Enter number of output images: \n')
 
         num = int(num)
 
         options = []
         for i in range(1, num + 1):
-            options.append([j.strip()
-                            for j in input(
-                                'Enter options for output image #{}: \n'
-                                .format(i)).split(',')])
+            options.append(parse_options(input('Enter options for output image #{}: \n'.format(i))))
             print()
         
         multiple(fn, MIN_PLANT_SIZE, options)
-
 
 
 
@@ -179,12 +176,10 @@ def just_centers(pic_name: str,
     photo = Picture(img)
 
     # Create a Field Object without rows    
-    global field
     field = photo.find_field(min_plant_pixels, make_rows=False)
 
     # Show the visual
-    field.show_visual()
-
+    field.show_visual(ruler=None)
 
 
 
@@ -199,9 +194,6 @@ def just_field(pic_name: str,
     min_plant_pixels
         The smallest number of pixels that constitutes a plant
     """
-
-    global SPEED
-    SPEED = max(int(min_plant_pixels**0.5 // 2), 1)
 
     # Open image
     img = Image.open(pic_name)
@@ -220,7 +212,6 @@ def just_field(pic_name: str,
 
 
 
-
 def main(pic_name: str, min_plant_pixels: int = MIN_PLANT_SIZE) -> None:
     """Main method to start everything
 
@@ -229,9 +220,6 @@ def main(pic_name: str, min_plant_pixels: int = MIN_PLANT_SIZE) -> None:
     min_plant_pixels
         The smallest number of pixels that constitutes a plant
     """
-
-    global SPEED
-    SPEED = max(int(min_plant_pixels**0.5 // 2), 1)
 
     # Open image
     img = Image.open(pic_name)
@@ -244,11 +232,9 @@ def main(pic_name: str, min_plant_pixels: int = MIN_PLANT_SIZE) -> None:
     photo = Picture(img)
 
     # Create a Field Object with rows
-    global field
     field = photo.find_field(min_plant_pixels)
 
     # Create a Ruler Object
-    global ruler
     ruler = Ruler(field)
 
     # Measure and save distances
@@ -260,7 +246,6 @@ def main(pic_name: str, min_plant_pixels: int = MIN_PLANT_SIZE) -> None:
     # Show the visual
     field.show_visual(ruler)
  
-
 
     
 def multiple(folder_name: str,
@@ -307,16 +292,14 @@ def multiple(folder_name: str,
             
         rename(join(folder_name,'Analysis'), new_name)
 
-
     # Create new folders inside the given directory
     mkdir(join(folder_name, 'Analysis'))
     mkdir(join(folder_name, 'Analysis/Images'))
     mkdir(join(folder_name, 'Analysis/Data'))
     
-
     # Gather the images to be analysed
     co = 0
-    pics = [j for j in ls if path.isfile(j)]
+    pics = [j for j in ls if isfile(j)]
     le = len(pics)
 
     # Analyze each of the pictures
@@ -356,6 +339,61 @@ def multiple(folder_name: str,
 
 
 
+class NaiveModel:
+    """A naive predictive model that doesn't need sklearn"""
+
+    def __init__(self, 
+                 color_tolerance: tuple = (1.1, 1, 0.99),
+                 min_brightness: int = 80,
+                 max_brightness: int = 130):
+        self.color_tolerance = color_tolerance
+        self.min_brightness = min_brightness
+        self.max_brightness = max_brightness
+
+
+    def is_green(self, pixel: tuple) -> bool:
+        
+        """Decides if the pixel is green
+        based on rgb value with tolerance
+
+        pixel: numpy.array(r: int, g: int, b: int)
+            The pixel to check
+        color_tolerance: tuple(r: number, g: number, b: number) 
+            Least green ratio of red:green:blue that is still considered green
+        min_brightness: int
+            The min rgb value of green
+        max_brightness: int
+            The min rgb value of green
+        """
+
+        # If the pixel is more green than any other color,
+        # Then we consider is a plant pixel
+        if pixel[0] < pixel[1] and pixel[2] < pixel[1]:
+            return True
+
+        # The following rules are for fine adjusments
+        # These tolerances may vary by photo
+        if pixel[0] > self.max_brightness:
+            return False
+
+        if pixel[1] < self.min_brightness:
+            return False
+        
+        if pixel[0] / pixel[1] > self.color_tolerance[0] / self.color_tolerance[1]:
+            return False
+
+        if pixel[2] / pixel[1] > self.color_tolerance[2] / self.color_tolerance[1]:
+            return False
+    
+        return True
+
+
+    def predict(self, data):
+        """Predict Method"""
+
+        return [self.is_green(i) for i in data]
+
+
 
 class Picture:
     """A Picture with analytical tools"""
@@ -376,19 +414,16 @@ class Picture:
         self.bin_pic = self.binarized(self.pic_array)
 
 
-
     def get_array(self) -> numpy.array:
         """Get array version of this Picture"""
         
         return self.pic_array
-
 
     
     def get_photo(self) -> 'Image':
         """Photo getter"""
         
         return self.photo
-
 
 
     def get_size(self) -> tuple:
@@ -406,19 +441,31 @@ class Picture:
             RuntimeWarning)
 
 
-    def binarized(self, pic_array: numpy.ndarray) -> numpy.ndarray:
+    def binarized(self, pic_array: numpy.ndarray, modelLocation="GreenNN.bin") -> numpy.ndarray:
         """Returns an array of the same size as pic_array, which corresponds
          to whether the pixels in the original array are green.
          
          pic_array: numpy.ndarray
             array to binarize
         """
-        
-        model = pickle.load(open('GreenNN.bin', 'rb'))
 
-        with warnings.catch_warnings(record=True) as w:
+        try:
+            model = pickle.load(open('GreenNN.bin', 'rb'))
+        
+        except FileNotFoundError:
+            print("Can't locate the GreenNN.bin file")
+            print("Defaulting to Naive Model")
+            model = NaiveModel()
+        
+        except AttributeError:
+            print("Can't load GreenNN.bin file")
+            print("Defaulting to Naive Model")
+            model = NaiveModel()
+
+
+        with warnings.catch_warnings(record=True):
             warnings.simplefilter('ignore')
-            data = [model[1].predict(model[0].transform(i)) for i in pic_array]
+            data = [model.predict(i) for i in pic_array]
 
         return numpy.array(data)
         
@@ -440,7 +487,6 @@ class Picture:
 
         # Get the first direction to expand the box
         direction = self.touching_border(bb, quickness)
-
 
         # loop until the box has no green on the perimeter
         while direction != 'EDGE':
@@ -483,7 +529,6 @@ class Picture:
             elif direction == 'TOP':
                 bb[1] -= quickness
 
-
             # Check the area directly around the current box
             elif direction == 'NONE':
                 cntn = False
@@ -504,17 +549,15 @@ class Picture:
                     
                 if cntn:
                     continue
+
                 break
                 
-
             # Default case
             else:
                 raise IndexError(str(direction) + ' is not a valid direction!')
 
-
             # Get new direction to expand in
             direction = self.touching_border(bb, quickness)
-
 
         # Gather all the green pixels within the bounding box        
         cluster = [(x, y)
@@ -522,17 +565,14 @@ class Picture:
                    for y in range(bb[1], bb[3] + 1)
                    if self.bin_pic[y][x]]
 
-
         # Don't count the plant if it's touching the edge of the picture
         if direction == 'EDGE':
             if len(cluster) > 250:
                 return (bb, cluster)
             else:
                 return (None, cluster, bb)
-
                     
         return (bb, cluster)
-
 
         
     def find_field(self,
@@ -548,8 +588,7 @@ class Picture:
             The minimum number of green pixels that counts as a plant
         make_rows: bool
             Whether rows should be made
-        """
-        
+        """        
         bin_pic_copy = self.bin_pic.copy()
 
         # Initialize list to return
@@ -586,7 +625,6 @@ class Picture:
                         self.error_occured()
                         
                         continue
-
 
                     # Check if the 'plant' is actually multiple plants
                     # Make a plant object and find a tight box approximation
@@ -639,7 +677,6 @@ class Picture:
                                               key = lambda u: u[1])[1]
                                           ),
                                          new_cluster])
-                            
 
                         # Check if each of the new blobs are big enough
                         # to be considered a plant
@@ -652,12 +689,10 @@ class Picture:
                         # blob to be considered a plant
                         if len(cluster[1]) >= min_plant_pixels:
                             plants.append(Plant(cluster[1], cluster[0]))
-                        
 
                     # Turn the whole green cluster red
                     for i in cluster[1]:
                         self.bin_pic[i[1]][i[0]] = 0
-
 
         # After all Plants are found, make a field object
         if make_rows:
@@ -667,7 +702,6 @@ class Picture:
         field = Field(self, plants, make_rows)
 
         return field
-
 
 
     def percent_plant_on_line(self,
@@ -710,7 +744,6 @@ class Picture:
         return total_green / total_pixels
 
 
-
     def touching_border(self, bb: list, quickness: int = 1) -> str:
         """Checks if any of the pixels touching the perimeter
             of bounding box bb are green.
@@ -747,7 +780,6 @@ class Picture:
             if self.bin_pic[y2][x1]:
                 return 'BL'
 
-
         # The next four check the sides of the box
         ## Check if there is a green pixel on the right side of the box
         if not (x2 + quickness >= len(self.bin_pic[0])):
@@ -773,7 +805,6 @@ class Picture:
                 if self.bin_pic[y1 - quickness][x1 + i]:
                     return 'TOP'
 
-
         # If all the green pixels are found and the box is on the edge
         if (x2 + quickness >= len(self.bin_pic[0])) or \
            (y2 + quickness >= len(self.bin_pic)) or \
@@ -781,11 +812,8 @@ class Picture:
            (x1 - quickness < 0):
             return 'EDGE'
 
-
-
         # If there are no green pixels touching the box, return 'NONE'
         return 'NONE'
-
 
 
 
@@ -807,12 +835,10 @@ class Plant:
         self.make_tight_box()
 
 
-
     def get_box(self) -> tuple:
         """Box getter"""
         
         return self.box
-
 
 
     def get_center(self) -> tuple:
@@ -821,12 +847,10 @@ class Plant:
         return self.center
 
 
-
     def get_cluster(self) -> list:
         """Cluster getter"""
         
         return self.cluster
-
 
     
     def get_diameter(self) -> float:
@@ -835,13 +859,11 @@ class Plant:
         return (self.box[3] - self.box[1] + self.box[2]  - self.box[0]) / 2
 
 
-
     def get_tight_box(self) -> tuple:
         """tight_box Getter"""
        
         return self.tight_box
     
-
 
     def set_box(self, box: tuple) -> None:
         """Box setter
@@ -851,7 +873,6 @@ class Plant:
         """
         
         self.box = box
-
 
     
     def set_cluster(self, cluster: list) -> None:
@@ -863,7 +884,6 @@ class Plant:
 
         self.cluster = cluster
         
-
 
     def find_center(self) -> tuple:
         """Finds the center of points
@@ -903,7 +923,6 @@ class Plant:
         x2 = self.box[2]
         y2 = self.box[3]
 
-
         ## Find y coordinates
         # Initialize variables and sort pixels by x coordinate
         width = self.box[2] - self.box[0]
@@ -930,7 +949,6 @@ class Plant:
             if len(hor) / width  > tightness:
                 y2 = hor[0][1]
                 break
-
 
         ## Find x coordinates
         # Initialize variables and sort pixels by y coordinate
@@ -964,15 +982,12 @@ class Plant:
             x1 = self.box[0]
             x2 = self.box[2]
 
-            
         # Default to original y values if no better estimate was found
         if y1 == y2:
             y1 = self.box[1]
             y2 = self.box[3]
 
-
         self.tight_box = (x1, y1, x2, y2)
-
 
 
 
@@ -995,7 +1010,6 @@ class Field:
         make_rows: bool
             whether rows should be made
         """
-        
         self.picture = picture
         self.plants = plants
         self.centers = [i.get_center() for i in plants]
@@ -1006,20 +1020,17 @@ class Field:
             self.remove_outliers(TIGHTNESS)
 
 
-
     def get_average_plant_width(self, sample_size: int = 1000) -> float:
         """Find and return the average plant width of sample_size
 
         sample_size: int
             The number of plants to sample
         """
-        
         total = 0
 
         # The sample size can not be larger than the field size
         if sample_size > self.get_num_plants():
             sample_size = self.get_num_plants()
-
 
         # Pick sample_size random plants and sum their diameters
         total = 0
@@ -1028,26 +1039,22 @@ class Field:
             p = choice(self.plants)
             total += p.get_diameter()
 
-
         # Get the average plant diameter
         avg = total / sample_size
         
         return avg
 
-
     
     def get_boxes(self) -> list:
         """Boxes getter"""
-        
-        return [i.get_box() for i in self.plants]
 
+        return [i.get_box() for i in self.plants]
 
 
     def get_centers(self) -> list:
         """Centers getter"""
-        
-        return self.centers
 
+        return self.centers
 
 
     def get_ditches(self) -> list:
@@ -1055,40 +1062,35 @@ class Field:
 
         return self.ditches
 
-
     
     def get_clusters(self) -> list:
         """Clusters getter"""
-        
-        return [i.get_cluster() for i in self.plants]
 
+        return [i.get_cluster() for i in self.plants]
 
 
     def get_lines(self) -> list:
         """Lines getter"""
-        
-        return self.lines
 
+        return self.lines
 
 
     def get_num_plants(self) -> int:
         """Returns number of plant in this Field"""
-        
-        return len(self.plants)
 
+        return len(self.plants)
 
 
     def get_picture(self) -> 'Picture':
         """Pic getter"""
-        
-        return self.picture
 
+        return self.picture
 
 
     def get_plants(self) -> list:
         """Plants getter"""
-        return self.plants
 
+        return self.plants
 
 
     def get_row_spacing(self) -> tuple:
@@ -1105,23 +1107,19 @@ class Field:
         # Take the median of the distances
         dist_px = dists[len(dists)//2]
 
-    
         return dist_px
-
 
 
     def get_rows(self) -> list:
         """Rows getter"""
-        
-        return self.rows
 
+        return self.rows
 
 
     def get_slope(self) -> float:
         """Slope getter"""
-        
-        return self.slope
 
+        return self.slope
 
 
     def set_slope(self, slope: float) -> None:
@@ -1130,7 +1128,6 @@ class Field:
         slope: float
             The new slope
         """
-        
         self.slope = slope
             
 
@@ -1148,7 +1145,6 @@ class Field:
         plant: 'Plant'
             The plant to add
         """
-
         self.plants.append(plant)
         self.centers.append(plant.get_center())
         self.make_rows()
@@ -1156,7 +1152,7 @@ class Field:
 
 
     def remove_plant_by_center(self, center: tuple) -> None:
-        """Remove plants from the field by thier center point
+        """Remove plants from the field by their center point
 
         center: tuple
             the center to be removed
@@ -1180,7 +1176,6 @@ class Field:
             else:
                 continue
             break
-
 
 
     def find_field_angle(self) -> None:
@@ -1246,7 +1241,6 @@ class Field:
         self.slope = median(slopes)
 
 
-
     def make_rows(self, tolerance: float = 0.05, speed: int = SPEED) -> None:
         """Finds and sets the rows of this Field
 
@@ -1255,7 +1249,6 @@ class Field:
         speed: int
             The speed at which to find the rows
         """
-
         PGOLS = []
 
         # Find the y values for which a line of slope self.slope
@@ -1308,7 +1301,6 @@ class Field:
         
         mins.append(bottom_bound)
 
-        
         # Initialize a dictionary with keys that correspond to the local mins
         rows = {}
         for i in mins:
@@ -1329,7 +1321,6 @@ class Field:
                 
             rows[mins[curr]].append(plant)
 
-
         # Use the dictionary to create rows in the field
         self.rows = [rows[i] for i in rows if len(rows[i]) >= 3]
 
@@ -1347,7 +1338,6 @@ class Field:
         self.ditches = [(self.slope, val) for val in mins]
 
 
-
     def remove_outliers(self, tolerance: int = 2):
         """Cuts out just the rows, ignoring the ditches between them.
         This is good for cutting out weeds and
@@ -1356,7 +1346,6 @@ class Field:
         tolerance: int
             How close to trim the rows
         """
-        global row_dist
 
         # Find the median distance between the rows of the field in pixels
         d = []
@@ -1385,7 +1374,6 @@ class Field:
                 else:
                     self.remove_plant_by_center(c)
                     
-
 
     def sort_rows(self) -> list:
         """Uses insertion sort to sort rows by x coordinate.
@@ -1452,7 +1440,6 @@ class Field:
         self.rows = finished
 
 
-
     def make_visual(self,
                     ruler = None,
                     options: list = ['rows',
@@ -1484,7 +1471,6 @@ class Field:
                     for k in j:
                         img.putpixel(k, (25,275,25))
 
-
             elif i == 'row_ids':
                 # Make row id numbers
 
@@ -1503,20 +1489,17 @@ class Field:
                               font = font)
                     num += 1
 
-
             elif i == 'boxes':
                 # Show all bounding boxes
                 
                 for i in self.get_boxes():
                     draw.rectangle(i, outline=(255, 0, 255))
 
-
             elif i == 'dirt':
                 # Remove Background
                 
                 img = Image.new('RGB', img.size, (130, 90, 50))
                 draw = ImageDraw.Draw(img)
-
 
             elif i == 'centers':
                 # Show all centers
@@ -1526,7 +1509,6 @@ class Field:
                     draw.arc([(i[0] - rad, i[1] - rad),
                               (i[0] + rad, i[1] + rad)],
                              0, 360, (0, 0, 255))
-
 
             elif i == 'ditches':
                 # Show ditches between plants
@@ -1548,19 +1530,15 @@ class Field:
                                  * (self.picture.get_size()[0] - 1)
                                  + line[1])
 
-
                     ## Check if the end point is within the picture
                     if end_point[1] < 0:
-
                         if start_point[1] < 0:
                             continue
                         
                         # Point in ditch on top border of picture
-                            end_point = (-1 * line[1] / line[0], 0)
-
+                        end_point = (-1 * line[1] / line[0], 0)
 
                     elif end_point[1] > self.picture.get_size()[1] - 1:
-
                         if start_point[1] > self.picture.get_size()[1] - 1:
                             continue
                         
@@ -1573,7 +1551,6 @@ class Field:
                     # Draw the ditches
                     for i in self.get_rows():
                         draw.line((start_point, end_point), color, width)
-
 
             elif i == 'lines':
                 # Show row line approximations
@@ -1598,16 +1575,14 @@ class Field:
 
                     ## Check if the end point is within the picture
                     if end_point[1] < 0:
-
                         if start_point[1] < 0:
                             continue
 
                         # Point on line on top border of picture
-                            end_point = (-1 * line[1] / line[0], 0)
+                        end_point = (-1 * line[1] / line[0], 0)
                             
 
                     elif end_point[1] > self.picture.get_size()[1] - 1:
-
                         if start_point[1] > self.picture.get_size()[1] - 1:
                             continue
 
@@ -1617,11 +1592,9 @@ class Field:
                                      / line[0],
                                      self.picture.get_size()[1] - 1)
 
-
                     # Draw the lines
                     for i in self.get_rows():
                         draw.line((start_point, end_point), color, width)
-
 
             elif i == 'rows':
                 if self.get_rows():
@@ -1634,7 +1607,6 @@ class Field:
                         draw.line([j.get_center() for j in i], color, width)
                 else:
                     print('Rows have not been made for this field')
-
 
             elif i == 'numbers':
                 # Display numbers between plants
@@ -1661,13 +1633,11 @@ class Field:
                     
                     num += 1
 
-
             elif i == 'tight':
                 # Display tight boxes
 
                 for i in self.get_tight_boxes():
                     draw.rectangle(i, outline=(100, 255, 255))
-
 
             elif i == 'distances':
                 # display distances between plants
@@ -1694,21 +1664,16 @@ class Field:
                     
                     num += 1
 
-
             # If the user inputs something that isn't an option    
             else:
                 raise Exception(i + ' is not a valid option.\n')
 
-            
         return img
 
         
-
     def show_visual(self, ruler: 'Ruler') -> None:
-        
-        ## Used for Debugging / Display
-        
-        """Interactive function that shows a visual view of
+        """Used for Debugging / Display.
+        Interactive function that shows a visual view of
             what the algorithm has done
         Asks for user input on type of photo show, and shows it
 
@@ -1729,21 +1694,17 @@ class Field:
                 )
             
             print()
-            
-            choice = choice.split(',')
-
-            options = []
+        
+            options = parse_options(choice)
 
             # Check if the user inputted a special option
-            for i in choice:
-                i = i.strip().lower()
+            for i in options:
 
                 if i == 'quit':
                     # quit
                     
                     show = False
                     break
-
 
                 elif i == 'help':
                     # print help, and restart
@@ -1772,32 +1733,10 @@ class Field:
                     choice = []
                     break
 
-
                 elif i == 'save':
                     # Save analysed image
                     
                     imgsave = True
-
-
-                elif i == '' or i == 'default':
-                    # Default view
-                    
-                    options.extend(['rows',
-                                    'centers',
-                                    'distances',
-                                    'row_ids'])
-
-
-                elif i == 'digital':
-                    # Show what the algorithm sees
-
-                    options.extend(['dirt',
-                                    'rows',
-                                    'clusters',
-                                    'boxes',
-                                    'centers',
-                                    'ditches',
-                                    'lines'])
                     
                 
                 elif i in ['boxes',
@@ -1810,7 +1749,9 @@ class Field:
                            'lines',
                            'tight',
                            'dirt',
-                           'row_ids']:
+                           'row_ids',
+                           'default',
+                           'digital']:
                     
                     options.append(i)
 
@@ -1834,6 +1775,35 @@ class Field:
                     img.save('LastSave.png')
 
 
+def parse_options(options):
+    final = []
+    ops = options.split(',')
+
+    for op in ops:
+        op = op.strip().lower()
+
+        if op in ["default", ""]:
+            final.extend(['rows',
+                        'centers',
+                        'distances',
+                        'row_ids'])
+
+        elif op == "digital":
+            final.extend(['dirt',
+                        'rows',
+                        'clusters',
+                        'boxes',
+                        'centers',
+                        'ditches',
+                        'lines'])
+        
+        else:
+            final.append(op)
+
+        return final
+
+
+
 
 
 class Ruler:
@@ -1845,7 +1815,6 @@ class Ruler:
         field: 'Field'
             The Field object to measure
         """
-        
         self.field = field
         self.ratio = self.get_distance_scale(36)
         self.photo_name = field.get_picture().get_photo().filename
@@ -1854,7 +1823,6 @@ class Ruler:
             ).get_location()
         
         self.find_distances_and_rows()
-
 
 
     def get_distance_scale(self, row_spacing: float) -> tuple:
@@ -1869,19 +1837,16 @@ class Ruler:
         return (self.field.get_row_spacing(), row_spacing)
 
 
-
     def get_field(self) -> 'Field':
         """Field getter"""
         
         return self.field
 
 
-
     def get_location(self) -> tuple:
         """Location getter"""
 
         return self.location
-
 
         
     def get_photo_name(self) -> str:
@@ -1890,23 +1855,19 @@ class Ruler:
         return self.photo_name
     
 
-
     def set_ratio(self, ratio: tuple) -> None:
         """Sets the ruler's pixels to inches ratio
 
         ratio: tuple
             A ratio of pixels to inches
         """
-        
         self.ratio = ratio
-
 
 
     def get_distances(self) -> dict:
         """Distances getter"""
         
         return self.dists
-
 
 
     def find_distances_and_rows(self) -> None:
@@ -1943,7 +1904,6 @@ class Ruler:
         self.rows = rows
 
 
-
     def output_distances(self, output_file: str) -> None:
         """Gets the distances between all of the plants in a row.
         Outputs all distances to a csv file.
@@ -1975,7 +1935,6 @@ class Ruler:
         print('Distances written to ' + output_file + '\n')
 
 
-
     def output_row_info(self, output_file: str) -> None:
         """Gets information about the rows.
         Outputs all information to a csv file.
@@ -1983,7 +1942,6 @@ class Ruler:
         output_file: str
             The name of the file to write distances to
         """
-
         with open(output_file, 'w+', newline = '') as csvfile:
             out = csv.writer(csvfile)
 
@@ -2013,7 +1971,6 @@ class Ruler:
                         row[i].get_center(), row[i+1].get_center()))
                        for i in range(len(row) - 1)]
 
-
                 # Calculate statistics to write               
                 row_id += 1
                 ideal_num = row_dist // 16 + 1
@@ -2022,7 +1979,6 @@ class Ruler:
                 median_gap = median(rds)
                 std_dev = stdev(rds)
                    
-
                 # Write results to file
                 out.writerow([row_id,
                               ideal_num,
@@ -2033,11 +1989,9 @@ class Ruler:
                               self.location[0],
                               self.location[1],
                               self.photo_name])
-                 
             
         print('Row information written to ' + output_file + '\n')
             
-
 
     def pixels_to_inches(self, px: float) -> float:
         """Converts pixels to inches
@@ -2048,7 +2002,6 @@ class Ruler:
         """
         
         return (px / self.ratio[0]) * self.ratio[1]
-
 
 
 
@@ -2083,11 +2036,9 @@ class Metadata:
                 else:
                     self.data[ExifTags.TAGS[i]] = self._get_GPS_data(info[i])
 
-
         except AttributeError:
             info = None
             self.data = None
-
 
 
     def _get_GPS_data(self, gpsdata: dict) -> dict:
@@ -2096,7 +2047,6 @@ class Metadata:
         gpsdata: dict
             The exif gps data from the jpg
         """
-        
         ans = {}
 
         # Replace all exif tags with english titles
@@ -2106,19 +2056,16 @@ class Metadata:
         return ans
 
 
-
     def get_data(self) -> dict:
         """Data Getter"""
         
         return self.data
 
 
-
     def get_location(self) -> tuple:
         """Location Getter
             Returns a tuple containing (latitude, longitude)
         """
-
         if self.data is None:
             return (None, None)
         
@@ -2134,24 +2081,20 @@ class Metadata:
                     + (lon[1][0] / lon[1][1] / 60) \
                     + (lon[2][0] / lon[2][1] / 3600)
 
-
         # Adjust for direction references
         if self.data['GPSInfo']['GPSLatitudeRef'] == 'S':
             latitude *= -1
 
         if self.data['GPSInfo']['GPSLongitudeRef'] == 'W':
             longitude *= -1
-            
 
         return (round(latitude, 6), round(longitude, 6))
-
 
 
     def get_location_str(self) -> tuple:
         """Location Getter
             Returns a tuple containing (latitude, longitude)
         """
-
         if self.data is None:
             return (None, None)
 
@@ -2166,7 +2109,6 @@ class Metadata:
         longitude = (lon[0][0] / lon[0][1]) \
                     + (lon[1][0] / lon[1][1] / 60) \
                     + (lon[2][0] / lon[2][1] / 3600)
-        
 
         # Make the results presentable
         latitude = str(round(latitude, 6)) \
@@ -2176,10 +2118,8 @@ class Metadata:
         longitude = str(round(longitude, 6)) \
                     + chr(176) + ' ' \
                     + self.data['GPSInfo']['GPSLongitudeRef']
-
         
         return (latitude, longitude)
-
 
 
 
