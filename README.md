@@ -18,12 +18,15 @@ To solve this program, a drone was deployed and set on a path to take thousands 
 ## How To Run It
 ### Prerequisites
 `Python 3.5` or later
+
 `PIL (Python Imaging Library)` and its dependencies - [PIL website](https://pillow.readthedocs.io/en/stable/index.html)
+
 `sklearn` OPTIONAL - uses neural network to increase speed and accuracy
 
 ### Installing
 Simply clone or download the repository
 ```git clone https://github.com/JamesMCurrier/FieldMeasurer.git```
+
 or [click here to download](https://github.com/JamesMCurrier/FieldMeasurer/archive/master.zip)
 
 ### Running The Tests
