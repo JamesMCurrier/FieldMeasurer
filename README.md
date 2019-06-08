@@ -32,15 +32,28 @@ or [click here to download](https://github.com/JamesMCurrier/FieldMeasurer/archi
 ### Running The Tests
 #### Running on a single image
 Before starting, go to the "Samples" folder and open "Sample1.jpg". This is the photo we will analyse in this test. 
+
 Run Potatoes.py with Python.
+
 When prompted "Enter Photo Name or Folder Name:" input `Samples/Sample1.jpg` and press enter.
+
 When Prompted "Which layer to display?" input `default` and press enter.
+
 The processed image should be displayed. Zoom in and take a closer look!
-You will notice that a new folder called "data" has been created. This folder contains 2 csv files containing data about the field. "data/Distances.csv" contains all of the gap distances. "data/Rows.csv" contains statistics about each of the rows.
+
+You will notice that a new folder called "data" has been created. This folder contains 2 csv files containing data about the field. 
+
++ `data/Distances.csv` contains all of the gap distances. 
++ `data/Rows.csv` contains statistics about each of the rows.
+
 Let's try displaying a different image. Go back to the program, input `digital`, and press enter.
+
 You should see a digitized image displayed. Zoom in and take a closer look!
-Let's try displaying a custom image. Go back to the program, input `row_ids, lines, boxes, centers, numbers` and press enter
+
+Let's try displaying a custom image. Go back to the program, input `row_ids, lines, boxes, centers, numbers` and press enter.
+
 Our custom image should be displayed. Zoom in and take a closer look!
+
 Here's a quick break down of our input...
 + `row_ids` adds the large light blue row numbers on the left.
 + `lines` adds a yellow line through each row.
@@ -49,23 +62,33 @@ Here's a quick break down of our input...
 + `numbers` adds the little white numbers coresponding to each of the gaps
 
 To view all of the possible options, input "help", and press enter.
+
 To exit the program, input `quit` and press enter.
 
 
 #### Running on folder of images
 Before starting, go to the "Samples" folder and look at the sample images. We will perform analysis on all of these images.
+
 Run Potatoes.py with Python.
+
 When prompted "Enter Photo Name or Folder Name:" input `Samples` and press enter.
+
 When prompted "Enter number of output images:", input `3` and press enter.
-Run Potatoes.py with Python.
+
 When prompted "Enter options for output image #1:" input `default` and press enter.
+
 When prompted "Enter options for output image #2:" input `digital` and press enter.
+
 When prompted "Enter options for output image #3:" input `row_ids, lines, boxes, centers, numbers` and press enter.
+
 The program will begin processing the images. Depending on your system, this may take a while (no more than a few minutes).
+
 When the program terminates, go to the "Samples" folder. You will notice that a new folder called "Analysis" has been created.
-Inside this "Analysis" folder, there is a "Data" folder and an "Images folder". 
+
+Inside this "Analysis" folder, there is a "Data" folder and an "Images" folder.
+
 + "Data" contains a "Rows.csv" file and a "Distances.csv" file for each of the images.
 + "Images" 3 processed images for each of the original images; one with `default` settings, one with `digital` settings and one with `row_ids, lines, boxes, centers, numbers` settings.
 
 ### Additional Information
-For additional infomation about the project including results, see [Field_Measurer.pdf](https://github.com/JamesMCurrier/FieldMeasurer/Field_Measurer.pdf)
+For additional infomation about the project including results, see [Field_Measurer.pdf](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/Field_Measurer.pdf)
