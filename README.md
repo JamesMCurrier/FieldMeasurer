@@ -1,11 +1,11 @@
 # Field Measurer
-### Before
+## Before
 ![Before Image](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/imgs_for_readme/before.jpg)
 
-### After
+## After
 ![After Image](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/imgs_for_readme/after.jpg)
 
-## Problem
+## Problem Description
 
 Planting accuracy of potato fields is extremely important as plants that are too close together will have a smaller yield, and plants that are too far apart are a waste of space. Currently, the distances between plants are being measured manually by hand on a ten-foot strip of each field. This method is slow, prone to human error, and the small sample size does not adequately represent the planting of the entire field. This project aims to provide an extremely fast, accurate way to measure distances between plants in a field to ensure proper planting.
 
