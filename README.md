@@ -1,4 +1,9 @@
 # Field Measurer
+### Before
+![Before Image](https://github.com/JamesMCurrier/FieldMeasurer/imgs_for_readme/before.jpg)
+
+### After
+![After Image](https://github.com/JamesMCurrier/FieldMeasurer/imgs_for_readme/after.jpg)
 
 ## Problem
 
@@ -58,3 +63,6 @@ When the program terminates, go to the "Samples" folder. You will notice that a 
 Inside this "Analysis" folder, there is a "Data" folder and an "Images folder". 
 + "Data" contains a "Rows.csv" file and a "Distances.csv" file for each of the images.
 + "Images" 3 processed images for each of the original images; one with `default` settings, one with `digital` settings and one with `row_ids, lines, boxes, centers, numbers` settings.
+
+### Additional Information
+For additional infomation about the project including results, see [Field_Measurer.pdf](https://github.com/JamesMCurrier/FieldMeasurer/Field_Measurer.pdf)
