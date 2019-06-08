@@ -30,7 +30,7 @@ Run Potatoes.py with Python.
 When prompted "Enter Photo Name or Folder Name:" input `Samples/Sample1.jpg` and press enter.
 When Prompted "Which layer to display?" input `default` and press enter.
 The processed image should be displayed. Zoom in and take a closer look!
-You will notice that two new files have been created. "Distances.csv" contains all of the gap distances. "Rows.csv" contains statistics about each of the rows.
+You will notice that a new folder called "data" has been created. This folder contains 2 csv files containing data about the field. "data/Distances.csv" contains all of the gap distances. "data/Rows.csv" contains statistics about each of the rows.
 Let's try displaying a different image. Go back to the program, input `digital`, and press enter.
 You should see a digitized image displayed. Zoom in and take a closer look!
 Let's try displaying a custom image. Go back to the program, input `row_ids, lines, boxes, centers, numbers` and press enter
