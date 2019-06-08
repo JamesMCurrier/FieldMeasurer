@@ -10,8 +10,6 @@ Planting accuracy of potato fields is extremely important as plants that are too
 To solve this program, a drone was deployed and set on a path to take thousands of photos of multiple potato fields. The timing of our sample collection was important, as the plants had to be at the correct stage of growth. If the growth was too little then the plants would not be visible from the drone, but if the growth was too much then the plants would be overlapping, and it would be difficult to distinguish individual plants. These photos were then processed by this program, which outputted the analyzed images, and csv files containing additional data about each image.
 
 
-## Solution Analysis
-
 ## How To Run It
 ### Prerequisites
 `Python 3.5` or later
