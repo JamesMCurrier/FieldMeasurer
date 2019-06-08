@@ -1,9 +1,9 @@
 # Field Measurer
 ### Before
-![Before Image](https://github.com/JamesMCurrier/FieldMeasurer/imgs_for_readme/before.jpg)
+![Before Image](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/imgs_for_readme/before.jpg)
 
 ### After
-![After Image](https://github.com/JamesMCurrier/FieldMeasurer/imgs_for_readme/after.jpg)
+![After Image](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/imgs_for_readme/after.jpg)
 
 ## Problem
 
