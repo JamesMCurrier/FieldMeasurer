@@ -25,9 +25,8 @@ To solve this program, a drone was deployed and set on a path to take thousands 
 
 ### Installing
 Simply clone or download the repository
-```git clone https://github.com/JamesMCurrier/FieldMeasurer.git```
 
-or [click here to download](https://github.com/JamesMCurrier/FieldMeasurer/archive/master.zip)
+```git clone https://github.com/JamesMCurrier/FieldMeasurer.git``` or [click here to download](https://github.com/JamesMCurrier/FieldMeasurer/archive/master.zip)
 
 ### Running The Tests
 #### Running on a single image
@@ -90,5 +89,5 @@ Inside this "Analysis" folder, there is a "Data" folder and an "Images" folder.
 + "Data" contains a "Rows.csv" file and a "Distances.csv" file for each of the images.
 + "Images" 3 processed images for each of the original images; one with `default` settings, one with `digital` settings and one with `row_ids, lines, boxes, centers, numbers` settings.
 
-### Additional Information
+## Additional Information
 For additional infomation about the project including results, see [Field_Measurer.pdf](https://github.com/JamesMCurrier/FieldMeasurer/blob/master/Field_Measurer.pdf)
